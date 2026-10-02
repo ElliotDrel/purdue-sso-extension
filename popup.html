@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Purdue automatic sign-in</title>
+<style>
+  body { min-width: 19rem; margin: 1rem; font: 14px/1.5 system-ui, sans-serif; }
+  button, select { font: inherit; }
+  button { display: block; width: 100%; margin: .5rem 0; padding: .45rem; }
+  select { display: block; width: 100%; margin: .35rem 0; padding: .35rem; }
+  [hidden] { display: none !important; }
+  #status { min-height: 1.5em; }
+</style>
+<strong>Purdue automatic sign-in</strong>
+<p id="pause-state" role="status" aria-live="polite"></p>
+<label for="pause-length">Manual sign-in for</label>
+<select id="pause-length">
+  <option value="15">15 minutes</option>
+  <option value="30">30 minutes</option>
+  <option value="60">1 hour</option>
+  <option value="until-resumed">Until I resume</option>
+</select>
+<button id="pause">Pause automatic sign-in</button>
+<button id="resume" hidden>Resume automatic sign-in now</button>
+<p>When paused, use the website's own account controls.</p>
+<hr>
+<button id="settings">Settings</button>
+<button id="retry">Retry on this tab</button>
+<p id="status" role="status" aria-live="polite"></p>
+<script src="popup.js"></script>
+</html>
