@@ -22,6 +22,8 @@ Use the extension popup to pause sign-in for 15 minutes, 30 minutes, one hour, o
 
 ## Outlook account selection
 
+If Microsoft has already started password or security-key sign-in for a different account on a Purdue sign-in page, the extension uses the page’s Back control once to return to account selection. It then selects the saved career account.
+
 Set the career account in Options to `edrel` to make `edrel@purdue.edu` the automatic sign-in account. On Microsoft’s account picker, including generic Outlook sign-in pages, the extension selects only an exact match for that saved account. On a Purdue-branded picker where it is missing, the extension chooses **Use another account** and continues with the saved career account. It does not select BuildPurdue merely because that account appears first.
 
 An Outlook message link without a mailbox address does not tell the extension which account owns the message. The saved career account is the default. If Outlook opens an already signed-in mailbox without showing a Microsoft sign-in page, this extension does not run there; switch accounts in Outlook. Pause automatic sign-in from the popup when you want to choose a different account manually.

@@ -213,6 +213,20 @@
         }
         return;
       }
+      // Microsoft may start passkey sign-in for a remembered wrong account.
+      // Recover before the identity guard blocks automation on that screen.
+      if (microsoft && (/purdue university/i.test(text)
+        || location.pathname.toLowerCase().includes(tenant)
+        || document.querySelector('img[alt*="Purdue" i], [aria-label*="Purdue" i]'))
+        && identity().some(account => account !== email && account !== config.username.toLowerCase())) {
+        const back = find('#idBtn_Back, #backButton, #idA_PWD_SwitchAccount')
+          || control(/^(?:back|use another account)$/i);
+        if (back) {
+          sessionStorage.setItem(prefix + 'context', String(Date.now()));
+          click('switch-account', back);
+        }
+        return;
+      }
       if (!purdueContext()) return;
       // This is a separate post-authentication screen. Handle it before stale
       // login inputs or generic live-region alerts can mask the prompt.
