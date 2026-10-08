@@ -2,8 +2,9 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 
-const content = await readFile(new URL('../content.js', import.meta.url), 'utf8');
-const popup = await readFile(new URL('../popup.js', import.meta.url), 'utf8');
+const core = await readFile(new URL('../setup-core.js', import.meta.url), 'utf8');
+const content = core + '\n' + await readFile(new URL('../content.js', import.meta.url), 'utf8');
+const popup = core + '\n' + await readFile(new URL('../popup.js', import.meta.url), 'utf8');
 const popupHtml = await readFile(new URL('../popup.html', import.meta.url), 'utf8');
 const uri = 'otpauth://totp/Test?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ';
 
@@ -50,7 +51,7 @@ async function contentPage({ hostname, pathname, body, campus, manualPause = 0,
     },
     chrome: {
       storage: {
-        local: { async get() { return { username: 'test', password: 'dummy', totp_uri: uri,
+        local: { async get() { return { email: 'test@purdue.edu', setup_complete: true, password: 'dummy', totp_uri: uri,
           enabled: true, campus, manual_pause_until: manualPause }; } },
         onChanged: { addListener(listener) { changes.push(listener); } },
       },
@@ -133,11 +134,12 @@ async function contentPage({ hostname, pathname, body, campus, manualPause = 0,
 
 {
   const listeners = {};
-  const store = { manual_pause_until: 0, enabled: true, username: 'test', password: 'dummy', totp_uri: uri };
-  const nodes = Object.fromEntries(['pause', 'resume', 'pause-length', 'settings', 'retry', 'pause-state', 'status']
-    .map(id => [id, { hidden: id === 'resume', textContent: '', value: '15',
+  const store = { manual_pause_until: 0, enabled: true, email: 'test@purdue.edu', setup_complete: true, password: 'dummy', totp_uri: uri };
+  const nodes = Object.fromEntries(['pause', 'resume', 'pause-length', 'settings', 'retry', 'pause-state', 'status', 'setup-intro', 'controls', 'account-label', 'state-dot', 'pause-controls']
+    .map(id => [id, { hidden: id === 'resume', textContent: '', value: '15', classList: { toggle() {} },
       addEventListener(_type, handler) { listeners[id] = handler; } }]));
   const page = vm.createContext({
+    URL,
     Date: class extends Date { static now() { return 1_000_000; } },
     document: { querySelector: selector => nodes[selector.slice(1)] },
     chrome: {
@@ -151,6 +153,7 @@ async function contentPage({ hostname, pathname, body, campus, manualPause = 0,
     },
   });
   await vm.runInContext(popup, page);
+  await new Promise(resolve => setImmediate(resolve));
   assert.doesNotMatch(popupHtml, /id="(?:switch|signout|manual-signout)"/);
   await listeners.pause();
   assert.equal(store.manual_pause_until, 1_900_000);

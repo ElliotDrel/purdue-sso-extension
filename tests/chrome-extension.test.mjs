@@ -7,8 +7,7 @@ import { generateTotp } from './reference-totp.mjs';
 const root = new URL('../', import.meta.url);
 const manifest = JSON.parse(await readFile(new URL('manifest.json', root), 'utf8'));
 const packageJson = JSON.parse(await readFile(new URL('package.json', root), 'utf8'));
-const content = await readFile(new URL('content.js', root), 'utf8');
-const optionsSource = await readFile(new URL('options.js', root), 'utf8');
+const content = await readFile(new URL('setup-core.js', root), 'utf8') + '\n' + await readFile(new URL('content.js', root), 'utf8');
 
 assert.equal(manifest.manifest_version, 3);
 assert.equal(manifest.version, packageJson.version, 'Keep extension and package versions aligned');
@@ -24,7 +23,7 @@ assert.deepEqual(manifest.content_scripts[0].matches, [
 assert.equal(manifest.content_scripts[0].all_frames, false);
 console.log('Passed: Chrome manifest scope.');
 
-async function runContent(enabled) {
+async function runContent(enabled, overrides = {}, changeConfiguration = false) {
   let submits = 0;
   let storageReads = 0;
   class Input {
@@ -37,6 +36,9 @@ async function runContent(enabled) {
     dispatchEvent() {}
   }
   const username = new Input();
+  const password = new Input();
+  let showPassword = false;
+  let changed;
   const next = { value: 'Next', getAttribute: () => null, closest: () => null,
     getClientRects: () => [{}], click: () => { submits++; } };
   const context = vm.createContext({
@@ -50,66 +52,32 @@ async function runContent(enabled) {
     clearInterval() {}, clearTimeout() {}, setTimeout: () => 1,
     document: { body: { innerText: 'Sign in Next' }, querySelector: () => null, querySelectorAll(selector) {
       if (selector.startsWith('#displayName')) return [];
+      if (selector === 'input[type="password"]' && showPassword) return [password];
       if (selector.startsWith('input[name="loginfmt"]')) return [username];
       if (selector.startsWith('button, a,')) return [next];
       return [];
     } },
-    chrome: { storage: { onChanged: { addListener() {} }, local: { async get() {
+    chrome: { storage: { onChanged: { addListener(handler) { changed = handler; } }, local: { async get() {
       storageReads++;
-      return { username: 'test', password: 'dummy',
-        totp_uri: 'otpauth://totp/Test?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ', enabled };
+      return { email: 'test@purdue.edu', setup_complete: true, password: 'dummy',
+        totp_uri: 'otpauth://totp/Test?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ', enabled, ...overrides };
     } } }, runtime: { onMessage: { addListener() {} } } },
   });
-  await vm.runInContext(content, context);
+  const exposed = content.replace(/\s+scheduleTicks\(\);\s*\}\)\(\);\s*$/, '\n  globalThis.runTick = tick;\n  scheduleTicks();\n})();');
+  await vm.runInContext(exposed, context);
+  if (changeConfiguration) {
+    showPassword = true;
+    next.value = 'Sign in';
+    changed({ enabled: { newValue: false } }, 'local');
+    await context.runTick();
+    assert.equal(password.value, '', 'Disabling or editing setup must stop use of captured credentials');
+  }
   return { submits, storageReads, username: username.value };
 }
 
 assert.deepEqual(await runContent(false), { submits: 0, storageReads: 1, username: '' });
 assert.deepEqual(await runContent(true), { submits: 1, storageReads: 1, username: 'test@purdue.edu' });
+assert.equal((await runContent(true, { email: 'test' })).submits, 0, 'Partial addresses never start automatic sign-in');
+assert.equal((await runContent(true, { setup_complete: false })).submits, 0, 'Enrollment confirmation is required');
+await runContent(true, {}, true);
 console.log('Passed: Chrome startup stays off until enabled and submits the configured Purdue account.');
-
-const listeners = {};
-const inputs = Object.fromEntries(['username', 'password', 'totp_uri', 'campus', 'enabled', 'status', 'current-code']
-  .map(key => [key, { value: '', checked: false, textContent: '' }]));
-let savedSettings;
-let removedSettings;
-const form = { addEventListener: (name, handler) => { listeners[name] = handler; }, reset() {} };
-const clearButton = { addEventListener: (name, handler) => { listeners.clear = handler; } };
-const refreshButton = { addEventListener: (name, handler) => { listeners.refresh = handler; } };
-const optionsContext = vm.createContext({
-  URL, crypto: webcrypto, Date: class extends Date { static now() { return 59_000; } },
-  document: { querySelector(selector) {
-    if (selector === '#settings') return form;
-    if (selector === '#clear') return clearButton;
-    if (selector === '#refresh-code') return refreshButton;
-    return inputs[selector.slice(1)];
-  } },
-  chrome: { storage: { local: {
-    async get() { return {}; },
-    async set(value) { savedSettings = value; },
-    async remove(value) { removedSettings = value; },
-  } } },
-});
-await vm.runInContext(`(async () => { ${optionsSource} })()`, optionsContext);
-inputs.username.value = 'test@purdue.edu';
-inputs.password.value = ' keep spaces ';
-inputs.totp_uri.value = '123456';
-inputs.enabled.checked = true;
-await listeners.submit({ preventDefault() {} });
-assert.equal(savedSettings, undefined, 'A six-digit code is not an enrollment URI');
-inputs.totp_uri.value = 'otpauth://totp/Test?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ';
-await listeners.submit({ preventDefault() {} });
-assert.equal(savedSettings.username, 'test');
-assert.equal(savedSettings.password, ' keep spaces ', 'Do not alter the password');
-assert.equal(savedSettings.enabled, true);
-assert.equal(savedSettings.campus, 'Purdue West Lafayette / Indianapolis');
-assert.equal(savedSettings.totp_uri, inputs.totp_uri.value);
-assert.equal(inputs['current-code'].textContent, generateTotp(inputs.totp_uri.value, 59_000));
-inputs.totp_uri.value = 'GEZD GNBV GY3T QOJQ GEZD GNBV GY3T QOJQ';
-await listeners.submit({ preventDefault() {} });
-assert.equal(savedSettings.totp_uri, 'otpauth://totp/Purdue%3Atest%40purdue.edu?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ&issuer=Purdue');
-assert.equal(inputs['current-code'].textContent, generateTotp(savedSettings.totp_uri, 59_000));
-await listeners.clear();
-assert.equal(removedSettings.join(','), 'username,password,totp_uri,campus,enabled,manual_pause_until,auth_flow');
-assert.equal(inputs['current-code'].textContent, '');
-console.log('Passed: Chrome options accept a setup key, reject a one-time code, preserve credentials, and clear settings.');

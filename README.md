@@ -7,16 +7,12 @@ An unofficial, unpacked Chrome extension that helps with Purdue sign-in on Brigh
 1. Download the extension ZIP from the [latest release](https://github.com/ElliotDrel/purdue-sso-extension/releases/latest) and extract it, or clone this repository with Git.
 2. Open `chrome://extensions` in Chrome and turn on **Developer mode**.
 3. Choose **Load unpacked** and select the repository folder containing `manifest.json`.
-4. Open the extension's **Options** page, enter your Purdue career account, password, and authenticator setup key or `otpauth://totp/` URI, enable automatic sign-in, and save.
-5. Start sign-in from a Purdue service. The extension runs only on the Purdue and Microsoft HTTPS pages listed in its manifest.
+4. Open the extension popup and choose **Start setup**. Enter your full Purdue email address, such as `you@purdue.edu`, your password, and your campus. A username without `@purdue.edu` is not accepted.
+5. Follow the authenticator instructions, paste the setup key, and choose **Save key and show code**. Enter the displayed code on Microsoft's setup page; it refreshes automatically and can be copied with **Copy code**.
+6. After Microsoft accepts the code and finishes adding the authenticator, confirm that in the extension and choose **Enable automatic sign-in**. Automation remains off until this step is complete.
+7. Choose **Try Purdue Brightspace**, or start sign-in from another supported Purdue service.
 
 Keep the folder in place while the unpacked extension is installed. After updating the files, select **Reload** on the extension's card in `chrome://extensions`.
-
-## Migrate from the old installation
-
-Keep the old extension installed until the replacement works, and keep your existing MFA method available. Turn off the old copy, choose **Load unpacked**, and select this repository's root folder containing `manifest.json`. Configure the replacement locally in Options. A new install path can create a new extension ID, so settings may not transfer automatically; never put your password or authenticator setup key in chat or Git.
-
-Confirm version `1.0.14` or newer, pause/resume behavior, and a normal Purdue sign-in before removing the old extension and deleting the old checkout. After reloading an extension, reload open sign-in tabs too. If the version is unexpected, check **Details → Loaded from**.
 
 ## Authenticator setup and troubleshooting
 
@@ -36,7 +32,7 @@ Use the extension popup to pause sign-in for 15 minutes, 30 minutes, one hour, o
 
 If Microsoft has already started password or security-key sign-in for a different account on a Purdue sign-in page, the extension uses the page’s Back control once to return to account selection. It then selects the saved career account.
 
-Set the career account in Options to `edrel` to make `edrel@purdue.edu` the automatic sign-in account. On Microsoft’s account picker, including generic Outlook sign-in pages, the extension selects only an exact match for that saved account. On a Purdue-branded picker where it is missing, the extension chooses **Use another account** and continues with the saved career account. It does not select BuildPurdue merely because that account appears first.
+Enter the full email address of the account you want to use during setup. On Microsoft’s account picker, including generic Outlook sign-in pages, the extension selects only an exact match for that saved address. On a Purdue-branded picker where it is missing, the extension chooses **Use another account** and continues with your configured account. It does not choose a different saved account merely because it appears first.
 
 An Outlook message link without a mailbox address does not tell the extension which account owns the message. The saved career account is the default. If Outlook opens an already signed-in mailbox without showing a Microsoft sign-in page, this extension does not run there; switch accounts in Outlook. Pause automatic sign-in from the popup when you want to choose a different account manually.
 
@@ -45,6 +41,8 @@ This project is not affiliated with or endorsed by Purdue University or Microsof
 ## Development and distribution
 
 Requires Node.js 20 or newer, with no package dependencies to install. Edit `content.js` directly. Run `npm test` for synthetic authentication, settings, popup, campus, and account-selection coverage, then `npm run check` for syntax and version consistency. Keep `package.json` and `manifest.json` versions aligned.
+
+The guided setup and popup share validation and authenticator helpers in `setup-core.js`; all screens share `ui.css`. Automated onboarding tests cover full-email validation, enrollment confirmation, code rollover and copying, incomplete setup, and storage failures. Changing or disabling saved configuration stops any active content script; reload an open sign-in page to use the updated settings.
 
 Run `npm run package` to create an extension-only folder and ZIP in `dist/`. The ZIP contains only runtime files, this README, and attribution. The [Verify extension workflow](https://github.com/ElliotDrel/purdue-sso-extension/actions) also creates a downloadable ZIP artifact on each successful run. Extract it and load the folder containing `manifest.json`.
 

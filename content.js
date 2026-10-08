@@ -1,10 +1,10 @@
 // Standalone extension sign-in logic. Edit this file directly.
 (async () => {
   'use strict';
-  const config = await chrome.storage.local.get(['username', 'password', 'totp_uri', 'enabled', 'campus', 'manual_pause_until']);
-  const ready = config.enabled && config.username && config.password && config.totp_uri;
-  config.username = (config.username || '').trim().replace(/@purdue\.edu$/i, '');
-  config.email = config.username + '@purdue.edu';
+  const config = await chrome.storage.local.get(['email', 'password', 'totp_uri', 'enabled', 'setup_complete', 'campus', 'manual_pause_until']);
+  config.email = PurdueSetup.normalizeEmail(config.email || '') || '';
+  const ready = config.enabled && PurdueSetup.configured(config);
+  config.username = config.email.split('@')[0];
   const tenant = '4130bd39-7c53-419c-b1e5-8758d6d63f21';
   const microsoft = location.hostname === 'login.microsoftonline.com';
   const brightspace = location.hostname === 'purdue.brightspace.com';
@@ -23,7 +23,15 @@
   let timer;
   let resumeTimer;
   chrome.storage.onChanged.addListener((changes, area) => {
-    if (area !== 'local' || !changes.manual_pause_until) return;
+    if (area !== 'local') return;
+    // Never keep using captured credentials after setup is changed or disabled.
+    // Reloading the sign-in page starts a fresh flow with the new configuration.
+    if (['email', 'password', 'totp_uri', 'enabled', 'setup_complete', 'campus'].some(key => changes[key])) {
+      stopped = true;
+      scheduleTicks();
+      return;
+    }
+    if (!changes.manual_pause_until) return;
     pausedUntil = Number(changes.manual_pause_until.newValue) || 0;
     scheduleTicks();
   });

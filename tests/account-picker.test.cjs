@@ -2,7 +2,8 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
-const script = fs.readFileSync(require('node:path').join(__dirname, '../content.js'), 'utf8');
+const script = fs.readFileSync(require('node:path').join(__dirname, '../setup-core.js'), 'utf8') + '\n'
+  + fs.readFileSync(require('node:path').join(__dirname, '../content.js'), 'utf8');
 
 async function picker({ accounts = [], branded = false, paused = false, enabled = true, tenant = false, selected }) {
   const clicks = [];
@@ -18,7 +19,7 @@ async function picker({ accounts = [], branded = false, paused = false, enabled 
   const storage = new Map();
   const context = {
     chrome: { storage: {
-      local: { get: async () => ({ username: 'edrel', password: 'test', totp_uri: 'test', enabled, manual_pause_until: paused ? -1 : 0 }) },
+      local: { get: async () => ({ email: 'edrel@purdue.edu', setup_complete: true, password: 'test', totp_uri: 'otpauth://totp/Test?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ', enabled, manual_pause_until: paused ? -1 : 0 }) },
       onChanged: { addListener() {} },
     }, runtime: { onMessage: { addListener() {} } } },
     location: { protocol: 'https:', hostname: 'login.microsoftonline.com', pathname: tenant ? '/4130bd39-7c53-419c-b1e5-8758d6d63f21/oauth2/authorize' : '/common/oauth2/authorize' },
@@ -31,7 +32,7 @@ async function picker({ accounts = [], branded = false, paused = false, enabled 
     },
     getComputedStyle: () => ({ visibility: 'visible' }),
     sessionStorage: { getItem: key => storage.get(key), setItem: (key, value) => storage.set(key, value) },
-    Date, Set, Number, Array, Object, console,
+    URL, Date, Set, Number, Array, Object, console,
     setInterval: () => 1, clearInterval() {}, setTimeout: () => 1, clearTimeout() {},
   };
   await vm.runInNewContext(script, context);

@@ -4,7 +4,7 @@ const manifest = JSON.parse(await readFile('manifest.json', 'utf8'));
 const name = `purdue-sso-extension-${manifest.version}`;
 const folder = resolve('dist', name);
 await mkdir(folder, { recursive: true });
-const files = ['manifest.json', 'content.js', 'options.html', 'options.js', 'popup.html', 'popup.js', 'README.md', 'NOTICE.md'];
+const files = ['manifest.json', 'content.js', 'options.html', 'options.js', 'popup.html', 'popup.js', 'setup-core.js', 'ui.css', 'README.md', 'NOTICE.md'];
 for (const file of files) await copyFile(file, resolve(folder, file));
 const zip = resolve('dist', `${name}.zip`);
 // Standard ZIP with stored entries: no OS archive command or dependency needed.
