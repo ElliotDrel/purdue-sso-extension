@@ -1,5 +1,4 @@
-// Generated from purdue-sso.user.js by scripts/build-chrome-extension.mjs.
-// Edit the userscript's shared sign-in logic, then run npm run build:chrome.
+// Standalone extension sign-in logic. Edit this file directly.
 (async () => {
   'use strict';
   const config = await chrome.storage.local.get(['username', 'password', 'totp_uri', 'enabled', 'campus', 'manual_pause_until']);
@@ -200,8 +199,18 @@
         click('campus', campusLink());
         return;
       }
-      if (purdueAccountPicker(text)) {
-        click('account', savedAccountTile());
+      if (microsoft && /pick an account/i.test(text)) {
+        // Generic Outlook sign-in uses /common and may have no Purdue branding.
+        // An exact match to the configured account is sufficient; never select
+        // the first tile or another Purdue mailbox just because it is saved.
+        const account = savedAccountTile();
+        if (account) {
+          sessionStorage.setItem(prefix + 'context', String(Date.now()));
+          click('account', account);
+        } else if (purdueAccountPicker(text)) {
+          sessionStorage.setItem(prefix + 'context', String(Date.now()));
+          click('another-account', control(/^use another account$/i));
+        }
         return;
       }
       if (!purdueContext()) return;
