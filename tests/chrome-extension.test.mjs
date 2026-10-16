@@ -11,8 +11,8 @@ const content = await readFile(new URL('setup-core.js', root), 'utf8') + '\n' + 
 
 assert.equal(manifest.manifest_version, 3);
 assert.equal(manifest.version, packageJson.version, 'Keep extension and package versions aligned');
-assert.deepEqual(manifest.permissions, ['storage', 'activeTab']);
-assert.equal(manifest.host_permissions, undefined);
+assert.deepEqual(manifest.permissions, ['storage', 'activeTab', 'declarativeNetRequestWithHostAccess']);
+assert.deepEqual(manifest.host_permissions, ['https://outlook.office.com/*']);
 assert.equal(manifest.background, undefined, 'Automatic sign-in needs no background worker');
 assert.deepEqual(manifest.content_scripts[0].matches, [
   'https://sso.purdue.edu/*',

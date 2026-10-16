@@ -1,9 +1,13 @@
 {
   "manifest_version": 3,
   "name": "Purdue automatic sign-in",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Fill Purdue sign-in locally using your saved account and authenticator enrollment.",
-  "permissions": ["storage", "activeTab"],
+  "permissions": ["storage", "activeTab", "declarativeNetRequestWithHostAccess"],
+  "host_permissions": ["https://outlook.office.com/*"],
+  "declarative_net_request": {
+    "rule_resources": [{ "id": "outlook_compose", "enabled": true, "path": "outlook-rules.json" }]
+  },
   "action": { "default_popup": "popup.html", "default_title": "Purdue automatic sign-in" },
   "options_page": "options.html",
   "content_scripts": [{

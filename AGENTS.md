@@ -22,6 +22,7 @@
 | `setup-core.js` | Shared full-email validation, enrollment parsing, and authenticator helpers |
 | `ui.css` | Shared settings and popup design |
 | `manifest.json` | Extension version and browser permissions |
+| `outlook-rules.json` | Chrome redirect rule for Outlook compose links |
 | `options.*` | Local account and authenticator setup |
 | `popup.*` | Manual pause, resume, retry, and settings |
 | `tests/` | Synthetic authentication and extension regression tests |

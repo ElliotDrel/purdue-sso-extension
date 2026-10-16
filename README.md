@@ -34,7 +34,17 @@ If Microsoft has already started password or security-key sign-in for a differen
 
 Enter the full email address of the account you want to use during setup. On Microsoft’s account picker, including generic Outlook sign-in pages, the extension selects only an exact match for that saved address. On a Purdue-branded picker where it is missing, the extension chooses **Use another account** and continues with your configured account. It does not choose a different saved account merely because it appears first.
 
-An Outlook message link without a mailbox address does not tell the extension which account owns the message. The saved career account is the default. If Outlook opens an already signed-in mailbox without showing a Microsoft sign-in page, this extension does not run there; switch accounts in Outlook. Pause automatic sign-in from the popup when you want to choose a different account manually.
+### Compose links from ChatGPT and other apps
+
+Starting with v1.1.1, top-level `https://outlook.office.com/mail/deeplink/compose` links automatically redirect to the same path on `outlook.cloud.microsoft`, including links embedded in an app's UI. Chrome performs the redirect before the old hostname loads. Only the hostname changes: recipients, subject, body, account hints, and other URL contents stay intact. Other Outlook pages and embedded frame requests are untouched. The rule requires access only to `https://outlook.office.com/*`; it does not inspect ChatGPT pages or use a background worker.
+
+Use account-switching bookmarks on that same destination hostname, for example `https://outlook.cloud.microsoft/mail/?login_hint=you%40purdue.edu`. In live testing with two signed-in Purdue accounts, compose on this hostname followed the account most recently selected through those bookmarks, including a compose link opened in a new tab. Merely focusing an older Outlook tab is not an account switch. This extension does not maintain its own account history or guarantee Outlook's selection after a session expires. Explicit account hints are preserved rather than replaced.
+
+The redirect works independently of the popup's automatic sign-in pause. If a Microsoft sign-in page appears, the existing automation still selects the configured career account; pause it when deliberately authenticating as another account. This supersedes the pre-v1.1.1 behavior where compose links on `outlook.office.com` could use a different remembered mailbox from the account-switching bookmarks.
+
+After updating, open `chrome://extensions`, find **Purdue automatic sign-in**, and select **Reload**. Confirm the card shows **1.1.1** and that its loaded folder is this repository (or the updated extracted release folder). If Chrome asks for the new Outlook site access, approve it for the redirect to work. Keep site access enabled for `outlook.office.com`; an on-click-only grant cannot redirect a fresh navigation automatically. Click the desired account bookmark once, then try the original compose link again. ChatGPT does not need to be refreshed, and saved account/authenticator setup does not need to be repeated.
+
+Message-reading links without a mailbox address still do not identify the owning account and are not redirected. When Microsoft displays an account picker, the saved career account remains the sign-in default.
 
 This project is not affiliated with or endorsed by Purdue University or Microsoft. Login pages and university policies may change.
 

@@ -1,0 +1,15 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {
+      "type": "redirect",
+      "redirect": { "transform": { "host": "outlook.cloud.microsoft" } }
+    },
+    "condition": {
+      "regexFilter": "^https://outlook\\.office\\.com/mail/deeplink/compose/?([?#].*)?$",
+      "isUrlFilterCaseSensitive": true,
+      "resourceTypes": ["main_frame"]
+    }
+  }
+]
