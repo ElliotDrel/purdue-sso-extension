@@ -6,6 +6,7 @@
 - Run `npm test` and `npm run check` before committing behavior changes.
 - Run `npm run package` to create an installable extension-only ZIP in ignored `dist/`.
 - Install the repository root in Chrome for development; install the extracted release folder for distribution.
+- When Elliot needs to reload his installed extension, open `chrome://extensions/?id=nlaffmbabjcfoojdhndncdlmggadejgk` in Chrome for him. Prefer browser tools; if they cannot open internal URLs, use a terminal launch when permitted. Never bypass an explicit browser-policy block.
 - Keep credentials and authenticator enrollment out of Git, logs, screenshots, and issue reports.
 - Preserve manual pause, exact account matching, account guards, and single-submit protection.
 - Accept only full `@purdue.edu` email addresses during setup; do not add username-only compatibility or migration logic.
