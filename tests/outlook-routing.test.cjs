@@ -9,7 +9,7 @@ const rules = JSON.parse(fs.readFileSync(path.join(root, resources[0].path), 'ut
 const rule = rules[0];
 const matches = url => new RegExp(rule.condition.regexFilter).test(url);
 
-test('compose redirect is enabled, limited to top-level navigation, and changes only the host', () => {
+test('mail deep-link redirect is enabled, limited to top-level navigation, and changes only the host', () => {
   assert.deepEqual(resources, [{ id: 'outlook_compose', enabled: true, path: 'outlook-rules.json' }]);
   assert.equal(rules.length, 1);
   assert.equal(rule.id, 1);
@@ -40,6 +40,20 @@ test('host-only transform preserves encoded message contents, explicit account h
   assert.equal(matches(target.href), false, 'The destination cannot loop');
 });
 
+test('read links preserve opaque message IDs, query parameters, and fragments', () => {
+  for (const id of ['AAkALgAAAAAAHYQDEapmEc2byACqAC-EWg0A8Ox3u1JfFkS2Si07ntVAPQACkVcrpgAA',
+    'synthetic%2Fid%2Bwith%3Dpadding', 'synthetic/id+with=padding']) {
+    for (const suffix of ['', '/', '?login_hint=test%40purdue.edu&x=%2B%20#message']) {
+      const source = 'https://outlook.office.com/mail/deeplink/read/' + id + suffix;
+      assert.equal(matches(source), true, source);
+      const target = new URL(source);
+      target.hostname = rule.action.redirect.transform.host;
+      assert.equal(target.href, source.replace('outlook.office.com', 'outlook.cloud.microsoft'));
+      assert.equal(matches(target.href), false, 'Reading links cannot loop');
+    }
+  }
+});
+
 test('other Outlook pages, lookalike domains, embedded URLs, and HTTP are untouched', () => {
   for (const url of [
     'https://outlook.office.com/mail/',
@@ -50,5 +64,10 @@ test('other Outlook pages, lookalike domains, embedded URLs, and HTTP are untouc
     'https://example.com/?url=https://outlook.office.com/mail/deeplink/compose',
     'https://outlook.cloud.microsoft/mail/deeplink/compose',
     'http://outlook.office.com/mail/deeplink/compose',
+    'https://outlook.office.com/mail/deeplink/read/',
+    'https://outlook.office.com/mail/deeplink/read/?id=missing',
+    'https://outlook.office.com/mail/deeplink/readSomething/id',
+    'https://outlook.office.com.evil.example/mail/deeplink/read/id',
+    'https://outlook.cloud.microsoft/mail/deeplink/read/id',
   ]) assert.equal(matches(url), false, url);
 });
