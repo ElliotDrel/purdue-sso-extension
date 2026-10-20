@@ -46,7 +46,7 @@ h3 { font-size: 1.1rem; margin-bottom: .5rem; }
 .lede { color: var(--muted); max-width: 56ch; margin-bottom: 2rem; }
 .field { margin: 1.35rem 0; }
 .field label { display: block; font-weight: 600; margin-bottom: .45rem; }
-.field input, .field select, .popup select { width: 100%; border: 1px solid #abb5bf; border-radius: 5px; padding: .8rem .9rem; background: var(--paper); color: var(--ink); min-height: 48px; }
+.field input, .field select, .popup select, .popup input[type="email"] { width: 100%; border: 1px solid #abb5bf; border-radius: 5px; padding: .8rem .9rem; background: var(--paper); color: var(--ink); min-height: 48px; }
 .field input[aria-invalid="true"] { border-color: var(--error); }
 .field-help { font-size: .875rem; color: var(--muted); margin: .45rem 0 0; }
 .password-wrap { position: relative; }
@@ -85,6 +85,7 @@ h3 { font-size: 1.1rem; margin-bottom: .5rem; }
 .popup { width: 350px; padding: 0; background: var(--paper); font-size: 14px; }
 .popup .masthead { padding: 1rem 1.25rem; }
 .popup-main { padding: 1.35rem; }
+.chooser { width: min(420px, 100%); margin: 5vh auto; }
 .popup h1 { font-size: 1.8rem; }
 .popup .lede { margin-bottom: 1.1rem; }
 .popup .primary, .popup .secondary { width: 100%; }
@@ -93,6 +94,8 @@ h3 { font-size: 1.1rem; margin-bottom: .5rem; }
 .popup select { padding: .5rem; min-height: 40px; }
 .popup .actions { margin-top: .8rem; }
 .popup .small { color: var(--muted); font-size: .85rem; margin: .85rem 0; }
+.outlook-settings { border-top: 1px solid var(--line); padding-top: 1rem; margin-top: 1rem; }
+.outlook-settings input, .outlook-settings select { width: 100%; }
 .popup-bottom { display: flex; gap: 1rem; border-top: 1px solid var(--line); padding-top: 1rem; margin-top: 1.2rem; }
 .text-button { padding: .3rem 0; background: none; border: none; color: var(--ink); text-decoration: underline; text-underline-offset: .25em; }
 @media (max-width: 850px) {

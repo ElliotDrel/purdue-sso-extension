@@ -1,10 +1,13 @@
 {
   "manifest_version": 3,
+  "minimum_chrome_version": "106",
+  "incognito": "not_allowed",
   "name": "Purdue automatic sign-in",
-  "version": "1.1.3",
+  "version": "1.2.0",
   "description": "Fill Purdue sign-in locally using your saved account and authenticator enrollment.",
-  "permissions": ["storage", "activeTab", "declarativeNetRequestWithHostAccess"],
-  "host_permissions": ["https://outlook.office.com/*"],
+  "permissions": ["storage", "activeTab", "declarativeNetRequestWithHostAccess", "webNavigation"],
+  "host_permissions": ["https://outlook.office.com/*", "https://outlook.cloud.microsoft/*"],
+  "background": { "service_worker": "outlook-background.js" },
   "declarative_net_request": {
     "rule_resources": [{ "id": "outlook_compose", "enabled": true, "path": "outlook-rules.json" }]
   },
@@ -19,6 +22,11 @@
     ],
     "js": ["setup-core.js", "content.js"],
     "run_at": "document_idle",
+    "all_frames": false
+  }, {
+    "matches": ["https://outlook.office.com/*", "https://outlook.cloud.microsoft/*"],
+    "js": ["outlook-account.js", "outlook-page.js"],
+    "run_at": "document_start",
     "all_frames": false
   }]
 }

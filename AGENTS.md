@@ -23,7 +23,11 @@
 | `setup-core.js` | Shared full-email validation, enrollment parsing, and authenticator helpers |
 | `ui.css` | Shared settings and popup design |
 | `manifest.json` | Extension version and browser permissions |
-| `outlook-rules.json` | Chrome redirect rule for Outlook compose links |
+| `outlook-rules.json` | Chrome hostname compatibility rule for Outlook app navigation |
+| `outlook-account.js` | Shared Outlook account resolver and URL planning |
+| `outlook-background.js` | Per-tab Outlook sign-in intent and confirmed account memory |
+| `outlook-page.js` | Early Outlook routing and mailbox-root confirmation |
+| `outlook-choose.*`, `outlook-popup.js` | Account chooser and popup preference |
 | `options.*` | Local account and authenticator setup |
 | `popup.*` | Manual pause, resume, retry, and settings |
 | `tests/` | Synthetic authentication and extension regression tests |

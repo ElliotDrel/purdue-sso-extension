@@ -10,11 +10,12 @@
     <div id="controls" hidden>
       <div id="pause-controls"><label for="pause-length">Pause automatic sign-in for</label><select id="pause-length"><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="60">1 hour</option><option value="until-resumed">Until I resume</option></select><div class="actions"><button id="pause" class="secondary">Pause automatic sign-in</button></div></div>
       <button id="resume" class="primary" hidden>Resume automatic sign-in</button>
-      <p class="small">To use another account, pause first, then choose it on the website.</p>
+      <p class="small">Pause to handle sign-in yourself.</p>
     </div>
+    <section class="outlook-settings"><label for="outlook-mode">Open Outlook links using</label><select id="outlook-mode"><option value="last">Last account selected</option><option value="ask">Always ask</option><option value="preferred">A preferred account</option></select><div id="outlook-preferred-field" hidden><label for="outlook-preferred">Email address</label><input id="outlook-preferred" type="email" autocomplete="email"></div><p id="outlook-status" class="small" role="status"></p></section>
     <div class="popup-bottom"><button id="settings" class="primary">Start setup</button><button id="retry" class="text-button" hidden>Retry sign-in</button></div>
     <p id="status" class="status" role="status" aria-live="polite"></p>
   </main>
-  <script src="setup-core.js"></script><script src="popup.js"></script>
+  <script src="setup-core.js"></script><script src="popup.js"></script><script src="outlook-account.js"></script><script src="outlook-popup.js"></script>
 </body>
 </html>

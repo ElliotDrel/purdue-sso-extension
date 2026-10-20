@@ -5,7 +5,7 @@ const vm = require('node:vm');
 const script = fs.readFileSync(require('node:path').join(__dirname, '../setup-core.js'), 'utf8') + '\n'
   + fs.readFileSync(require('node:path').join(__dirname, '../content.js'), 'utf8');
 
-async function picker({ accounts = [], branded = false, paused = false, enabled = true, tenant = false, selected }) {
+async function picker({ accounts = [], branded = false, paused = false, enabled = true, tenant = false, selected, outlookAuth = null }) {
   const clicks = [];
   const element = (text, name) => ({
     textContent: text, innerText: text, disabled: false,
@@ -21,7 +21,7 @@ async function picker({ accounts = [], branded = false, paused = false, enabled 
     chrome: { storage: {
       local: { get: async () => ({ email: 'edrel@purdue.edu', setup_complete: true, password: 'test', totp_uri: 'otpauth://totp/Test?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ', enabled, manual_pause_until: paused ? -1 : 0 }) },
       onChanged: { addListener() {} },
-    }, runtime: { onMessage: { addListener() {} } } },
+    }, runtime: { sendMessage: async () => outlookAuth, onMessage: { addListener() {} } } },
     location: { protocol: 'https:', hostname: 'login.microsoftonline.com', pathname: tenant ? '/4130bd39-7c53-419c-b1e5-8758d6d63f21/oauth2/authorize' : '/common/oauth2/authorize' },
     document: {
       body: { innerText: `${selected ? 'Face, fingerprint, PIN or security key' : 'Pick an account'} ${branded ? 'Purdue University' : ''}` },
@@ -62,4 +62,15 @@ test('correct account and unrelated sign-in do not trigger account recovery', as
   assert.deepEqual(await picker({ selected: 'edrel@purdue.edu', branded: true }), []);
   assert.deepEqual(await picker({ selected: 'other@example.com' }), []);
   assert.deepEqual(await picker({ selected: 'buildp@purdue.edu', branded: true, paused: true }), []);
+});
+
+test('Outlook-selected alternate session wins without credential recovery or fallback to career account', async () => {
+  assert.deepEqual(await picker({ accounts: ['edrel@purdue.edu', 'buildp@purdue.edu'],
+    outlookAuth: { account: 'buildp@purdue.edu' } }), ['buildp@purdue.edu']);
+  assert.deepEqual(await picker({ selected: 'buildp@purdue.edu', branded: true,
+    outlookAuth: { account: 'buildp@purdue.edu' } }), [], 'No Back button on the intentionally selected account');
+  assert.deepEqual(await picker({ accounts: ['edrel@purdue.edu'], branded: true,
+    outlookAuth: { account: 'missing@example.org' } }), [], 'Missing credentials/session stays manual');
+  assert.deepEqual(await picker({ accounts: ['edrel@purdue.edu'], outlookAuth: { manual: true } }), []);
+  assert.deepEqual(await picker({ accounts: ['edrel@purdue.edu'], outlookAuth: { error: true } }), []);
 });

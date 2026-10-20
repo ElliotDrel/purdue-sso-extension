@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Choose an Outlook account</title><link rel="stylesheet" href="ui.css"></head>
+<body class="popup chooser"><main class="popup-main">
+  <h1>Open Outlook with</h1>
+  <p>Choose an account. Microsoft will handle sign-in if needed.</p>
+  <form id="account-form"><label for="outlook-email">Email address</label><input id="outlook-email" type="email" autocomplete="email" required><div class="actions"><button type="submit" class="primary">Continue to Outlook</button></div></form>
+  <p id="status" class="status" role="status"></p>
+</main><script src="outlook-account.js"></script><script src="outlook-choose.js"></script></body>
+</html>

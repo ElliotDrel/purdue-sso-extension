@@ -8,6 +8,22 @@
   const tenant = '4130bd39-7c53-419c-b1e5-8758d6d63f21';
   const microsoft = location.hostname === 'login.microsoftonline.com';
   const brightspace = location.hostname === 'purdue.brightspace.com';
+  let outlookAuth = null;
+  if (!brightspace && chrome.runtime.sendMessage) {
+    try { outlookAuth = await chrome.runtime.sendMessage({ type: 'outlook-auth' }); }
+    catch { return; } // Do not guess an account when the resolver is unavailable.
+    if (outlookAuth?.error) return;
+    if (microsoft && outlookAuth && document.addEventListener) {
+      document.addEventListener('click', event => {
+        if (!event.isTrusted || !/pick an account/i.test(document.body?.innerText || '')) return;
+        const tile = event.target.closest('[data-test-id], .table, [role="button"]');
+        const addresses = (tile?.textContent || '').match(/[\w.+-]+@[\w.-]+\.[a-z]{2,}/gi) || [];
+        if (addresses.length !== 1) return;
+        outlookAuth = { account: addresses[0].toLowerCase() };
+        void chrome.runtime.sendMessage({ type: 'outlook-select', account: addresses[0] }).catch(() => {});
+      }, true);
+    }
+  }
   if (location.protocol !== 'https:' || ![
     'sso.purdue.edu', 'idp.purdue.edu', 'login.microsoftonline.com', 'purdue.brightspace.com',
   ].includes(location.hostname)) return;
@@ -145,14 +161,14 @@
     return branded || location.pathname.toLowerCase().includes(tenant);
   }
 
-  function savedAccountTile() {
+  function savedAccountTile(account = email) {
     const candidates = Array.from(document.querySelectorAll(
       'button, a, [role="button"], [data-test-id], .table',
     ));
     return candidates.filter(element => {
       if (!visible(element)) return false;
       const addresses = (element.textContent || '').match(/[\w.+-]+@[\w.-]+\.[a-z]{2,}/gi) || [];
-      return addresses.length === 1 && addresses[0].toLowerCase() === email;
+      return addresses.length === 1 && addresses[0].toLowerCase() === account;
     }).sort((a, b) => a.textContent.length - b.textContent.length)[0];
   }
 
@@ -202,6 +218,13 @@
     busy = true;
     try {
       const text = document.body?.innerText || '';
+      if (outlookAuth && (outlookAuth.manual || outlookAuth.account !== email)) {
+        // Existing sessions can be selected, but saved credentials belong to one account.
+        if (microsoft && !outlookAuth.manual && /pick an account/i.test(text)) {
+          click('account', savedAccountTile(outlookAuth.account));
+        }
+        return;
+      }
       if (brightspace) {
         if (location.pathname.toLowerCase() !== '/d2l/login') return;
         click('campus', campusLink());

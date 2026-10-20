@@ -13,7 +13,7 @@ source = '(() => { const config = ' + JSON.stringify(config) + ';'
   + ' const microsoft = true; const brightspace = false;'
   + ' const prefix = "purdue-autologin:"; const email = config.email.toLowerCase();'
   + ' const campusChoice = "Purdue West Lafayette / Indianapolis";'
-  + ' let stopped = false; let pausedUntil = 0; let busy = false;'
+  + ' let stopped = false; let pausedUntil = 0; let busy = false; let outlookAuth = null;'
   + ' const done = new Set(); let started = Date.now(); let timer; let resumeTimer;'
   + source.slice(source.indexOf('  function visible(element) {'), source.lastIndexOf('  scheduleTicks();'))
   + ' globalThis.testApi = { generateTotp, purdueContext, claim, fill, tick, visible, purdueAccountPicker, savedAccountTile };})();';

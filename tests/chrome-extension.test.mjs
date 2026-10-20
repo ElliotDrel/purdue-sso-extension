@@ -10,10 +10,15 @@ const packageJson = JSON.parse(await readFile(new URL('package.json', root), 'ut
 const content = await readFile(new URL('setup-core.js', root), 'utf8') + '\n' + await readFile(new URL('content.js', root), 'utf8');
 
 assert.equal(manifest.manifest_version, 3);
+assert.equal(manifest.incognito, 'not_allowed', 'Profile account hints must never be injected into private browsing');
 assert.equal(manifest.version, packageJson.version, 'Keep extension and package versions aligned');
-assert.deepEqual(manifest.permissions, ['storage', 'activeTab', 'declarativeNetRequestWithHostAccess']);
-assert.deepEqual(manifest.host_permissions, ['https://outlook.office.com/*']);
-assert.equal(manifest.background, undefined, 'Automatic sign-in needs no background worker');
+assert.deepEqual(manifest.permissions, ['storage', 'activeTab', 'declarativeNetRequestWithHostAccess', 'webNavigation']);
+assert.deepEqual(manifest.host_permissions, ['https://outlook.office.com/*', 'https://outlook.cloud.microsoft/*']);
+assert.deepEqual(manifest.background, { service_worker: 'outlook-background.js' });
+assert.deepEqual(manifest.content_scripts[1], {
+  matches: ['https://outlook.office.com/*', 'https://outlook.cloud.microsoft/*'],
+  js: ['outlook-account.js', 'outlook-page.js'], run_at: 'document_start', all_frames: false,
+});
 assert.deepEqual(manifest.content_scripts[0].matches, [
   'https://sso.purdue.edu/*',
   'https://idp.purdue.edu/*',
