@@ -9,7 +9,7 @@ const rules = JSON.parse(fs.readFileSync(path.join(root, resources[0].path), 'ut
 const rule = rules[0];
 const matches = url => new RegExp(rule.condition.regexFilter).test(url);
 
-test('mail deep-link redirect is enabled, limited to top-level navigation, and changes only the host', () => {
+test('Outlook app navigation shares one hostname and only top-level navigation is changed', () => {
   assert.deepEqual(resources, [{ id: 'outlook_compose', enabled: true, path: 'outlook-rules.json' }]);
   assert.equal(rules.length, 1);
   assert.equal(rule.id, 1);
@@ -41,7 +41,7 @@ test('host-only transform preserves encoded message contents, explicit account h
 });
 
 test('read links preserve opaque message IDs, query parameters, and fragments', () => {
-  for (const id of ['AAkALgAAAAAAHYQDEapmEc2byACqAC-EWg0A8Ox3u1JfFkS2Si07ntVAPQACkVcrpgAA',
+  for (const id of ['AAkALgSyntheticOpaque_Message-Id000',
     'synthetic%2Fid%2Bwith%3Dpadding', 'synthetic/id+with=padding']) {
     for (const suffix of ['', '/', '?login_hint=test%40purdue.edu&x=%2B%20#message']) {
       const source = 'https://outlook.office.com/mail/deeplink/read/' + id + suffix;
@@ -54,19 +54,34 @@ test('read links preserve opaque message IDs, query parameters, and fragments', 
   }
 });
 
-test('other Outlook pages, lookalike domains, embedded URLs, and HTTP are untouched', () => {
+test('all app routes share the canonical host without enumerating deep-link actions', () => {
+  for (const route of ['', '?login_hint=test%40purdue.edu', 'mail', 'mail/', 'mail/inbox',
+    'mail/0/deeplink/read/synthetic%2Fid', 'mail/test%40purdue.edu/inbox',
+    'mail/deeplink/future-action/opaque%2Bid?x=%20%2B#part',
+    'mail/deeplink/compose/item', 'calendar', 'calendar/view/week',
+    'calendar/deeplink/compose?subject=Test', 'calendar/item/synthetic-id',
+    'people/', 'people/0/contact/synthetic-id']) {
+    const source = 'https://outlook.office.com/' + route;
+    assert.equal(matches(source), true, source);
+    const target = new URL(source);
+    target.hostname = rule.action.redirect.transform.host;
+    assert.equal(target.href, source.replace('outlook.office.com', 'outlook.cloud.microsoft'));
+    assert.equal(matches(target.href), false);
+  }
+});
+
+test('auth callbacks, APIs, legacy OWA handlers, lookalikes, embedded URLs, and HTTP are untouched', () => {
   for (const url of [
-    'https://outlook.office.com/mail/',
-    'https://outlook.office.com/calendar/deeplink/compose',
-    'https://outlook.office.com/mail/deeplink/composeSomething',
-    'https://outlook.office.com/mail/deeplink/compose/item',
+    'https://outlook.office.com/owa/?code=synthetic&state=synthetic',
+    'https://outlook.office.com/owa/auth/logon.aspx',
+    'https://outlook.office.com/oauth2/callback',
+    'https://outlook.office.com/api/v2.0/me',
+    'https://outlook.office.com/mailSomething/inbox',
+    'https://outlook.office.com/calendarSomething/',
     'https://outlook.office.com.evil.example/mail/deeplink/compose',
     'https://example.com/?url=https://outlook.office.com/mail/deeplink/compose',
     'https://outlook.cloud.microsoft/mail/deeplink/compose',
     'http://outlook.office.com/mail/deeplink/compose',
-    'https://outlook.office.com/mail/deeplink/read/',
-    'https://outlook.office.com/mail/deeplink/read/?id=missing',
-    'https://outlook.office.com/mail/deeplink/readSomething/id',
     'https://outlook.office.com.evil.example/mail/deeplink/read/id',
     'https://outlook.cloud.microsoft/mail/deeplink/read/id',
   ]) assert.equal(matches(url), false, url);

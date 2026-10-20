@@ -7,7 +7,7 @@
       "redirect": { "transform": { "host": "outlook.cloud.microsoft" } }
     },
     "condition": {
-      "regexFilter": "^https://outlook\\.office\\.com/mail/deeplink/(compose/?|read/[^?#]+)([?#].*)?$",
+      "regexFilter": "^https://outlook\\.office\\.com/((mail|calendar|people)(/[^?#]*)?)?([?#].*)?$",
       "isUrlFilterCaseSensitive": true,
       "resourceTypes": ["main_frame"]
     }
