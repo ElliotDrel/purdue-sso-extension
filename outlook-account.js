@@ -12,6 +12,13 @@ globalThis.OutlookAccount = (() => {
         && /^\/(?:$|(?:mail|calendar|people)(?:\/|$))/.test(url.pathname) ? url : null;
     } catch { return null; }
   }
+  function mailboxEmail(text) {
+    // Outlook renders icon-font glyphs alongside the address inside the treeitem.
+    // This helper is used only on that mailbox-root element, never the message body.
+    const addresses = typeof text === 'string'
+      ? text.match(/[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9.-]+\.[a-z]{2,}/gi) || [] : [];
+    return addresses.length === 1 ? email(addresses[0]) : '';
+  }
   function explicit(url) {
     const hint = url.searchParams.get('login_hint') || url.searchParams.get('auth');
     const mailbox = url.pathname.match(/^\/(?:mail|calendar|people)\/([^/]+)/)?.[1] || '';
@@ -62,5 +69,5 @@ globalThis.OutlookAccount = (() => {
       { id: 102, priority: 3, condition: condition('^https://outlook\\.cloud\\.microsoft' + fixed), action: { type: 'allow' } },
     ];
   }
-  return { email, appUrl, explicit, resolve, plan, rules };
+  return { email, mailboxEmail, appUrl, explicit, resolve, plan, rules };
 })();

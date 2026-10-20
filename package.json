@@ -1,6 +1,6 @@
 {
   "name": "purdue-sso-extension",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "private": true,
   "description": "Standalone Purdue automatic sign-in Chrome extension",
   "scripts": {

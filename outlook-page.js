@@ -7,7 +7,7 @@
   const confirm = async () => {
     if (confirmed) return;
     const root = document.querySelector('[id^="primaryMailboxRoot_"]');
-    const account = OutlookAccount.email(root?.textContent);
+    const account = OutlookAccount.mailboxEmail(root?.textContent);
     if (!account) return;
     confirmed = true;
     observer.disconnect();

@@ -3,7 +3,7 @@
   "minimum_chrome_version": "106",
   "incognito": "not_allowed",
   "name": "Purdue automatic sign-in",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Fill Purdue sign-in locally using your saved account and authenticator enrollment.",
   "permissions": ["storage", "activeTab", "declarativeNetRequestWithHostAccess", "webNavigation"],
   "host_permissions": ["https://outlook.office.com/*", "https://outlook.cloud.microsoft/*"],

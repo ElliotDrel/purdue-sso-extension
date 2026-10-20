@@ -176,7 +176,7 @@ test('observer ignores message addresses and tab focus; confirms only the mailbo
   });
   await vm.runInContext(read('outlook-page.js'), context);
   assert.equal(sent.length, 1);
-  root = { textContent: 'confirmed@example.org' };
+  root = { textContent: '\ue488confirmed@example.org' };
   mutation();
   await new Promise(resolve => setImmediate(resolve));
   mutation();
@@ -261,4 +261,20 @@ test('cold HTTP sign-in redirects retain per-tab intent even before a document c
   w.listeners.navigate({ tabId: 1, frameId: 0, url: 'https://login.microsoftonline.com/common/login' });
   const auth = await w.send('outlook-auth', w.sender(1, 'https://login.microsoftonline.com/common/login'));
   assert.equal(auth.account, 'org@example.net');
+});
+
+test('real Outlook mailbox-root icon labels confirm a switch and update subsequent link routing', async () => {
+  assert.equal(account.mailboxEmail('\ue488organization@example.org'), 'organization@example.org');
+  assert.equal(account.mailboxEmail('  \ue488 Organization@example.org \ue48a '), 'organization@example.org');
+  assert.equal(account.mailboxEmail('organization@example.org other@example.org'), '');
+  assert.equal(account.mailboxEmail('Loading mailbox'), '');
+  const w = worker();
+  w.local.outlook_last = { email: 'career@purdue.edu', selectedAt: 1 };
+  const switched = w.sender(2, base + '?login_hint=organization%40example.org', 'switched');
+  await w.send('outlook-route', switched);
+  await w.send('outlook-confirm', switched, { account: account.mailboxEmail('\ue488organization@example.org') });
+  assert.equal(w.local.outlook_last.email, 'organization@example.org');
+  const route = await w.send('outlook-route', w.sender(3, base + 'deeplink/read/synthetic-id', 'link'));
+  assert.match(route.target, /login_hint=organization%40example.org/);
+  assert.equal(account.rules(w.local)[0].action.redirect.transform.queryTransform.addOrReplaceParams[0].value, 'organization@example.org');
 });
