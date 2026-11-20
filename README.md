@@ -12,7 +12,7 @@ An unofficial, unpacked Chrome extension that helps with Purdue sign-in on Brigh
 6. After Microsoft accepts the code and finishes adding the authenticator, confirm that in the extension and choose **Enable automatic sign-in**. Automation remains off until this step is complete.
 7. Choose **Try Purdue Brightspace**, or start sign-in from another supported Purdue service.
 
-Keep the folder in place while the unpacked extension is installed. After updating the files, select **Reload** on the extension's card in `chrome://extensions`.
+Keep the folder in place while the unpacked extension is installed. To update a Git checkout, pull the latest `main`. For an install from a ZIP, extract the new build over the existing folder that contains `manifest.json`. In each Chrome profile with the extension installed, open `chrome://extensions`, select **Reload** on the extension's card, and confirm version **1.2.2**. Updating in place retains your saved setup.
 
 ## Authenticator setup and troubleshooting
 
@@ -48,7 +48,7 @@ The same per-tab choice accompanies an Outlook sign-in through Microsoft/Purdue 
 
 Only the last confirmed email and the selected preference are persisted locally in the Chrome profile. Temporary per-tab account intent expires after ten minutes and is cleared when leaving the Outlook authentication chain or closing the tab; it survives service-worker restarts but not browser restarts. Expired Outlook sign-in intent yields to manual selection. No account history, extra credential store, cookie synchronization, or stored message URL is added. The extension is disabled in private browsing so profile account hints cannot leak into an incognito session. Chrome 106 or newer is required.
 
-After updating, open `chrome://extensions/?id=nlaffmbabjcfoojdhndncdlmggadejgk`, reload **Purdue automatic sign-in**, and confirm version **1.2.1**. Chrome may ask for the additional Outlook site access and navigation permission. Select each account through your existing bookmark and allow its Mail sidebar to load to seed the remembered account. Existing Purdue credentials and authenticator setup are retained. Installed v1.2.1 was verified in Chrome through edrel to BuildPurdue and back: new links received the matching account hint, and a blank compose window explicitly showed the BuildPurdue sender. The personal-mailbox message correctly reported unavailable in BuildPurdue rather than selecting the personal account. Automated tests use synthetic identities and include the real mailbox-label icon format. Cold-session reauthentication remains covered by synthetic tests rather than forced live sign-outs.
+When upgrading from a version without account routing, Chrome may ask for the additional Outlook site access and navigation permission. Select each account through your existing bookmark and allow its Mail sidebar to load to seed the remembered account. Installed v1.2.1 was verified in Chrome through edrel to BuildPurdue and back: new links received the matching account hint, and a blank compose window explicitly showed the BuildPurdue sender. The personal-mailbox message correctly reported unavailable in BuildPurdue rather than selecting the personal account. Automated tests use synthetic identities and include the real mailbox-label icon format. Cold-session reauthentication remains covered by synthetic tests rather than forced live sign-outs.
 
 The earlier hostname-only v1.1.x routing is superseded by this resolver. Mailbox ownership still matters: routing cannot make one mailbox's message ID accessible in another, and the extension does not try accounts to discover a message's owner.
 
@@ -59,6 +59,8 @@ This project is not affiliated with or endorsed by Purdue University or Microsof
 Requires Node.js 20 or newer, with no package dependencies to install. Edit `content.js` directly. Run `npm test` for synthetic authentication, settings, popup, campus, and account-selection coverage, then `npm run check` for syntax and version consistency. Keep `package.json` and `manifest.json` versions aligned.
 
 The guided setup and popup share validation and authenticator helpers in `setup-core.js`; all screens share `ui.css`. Automated onboarding tests cover full-email validation, enrollment confirmation, code rollover and copying, incomplete setup, and storage failures. Changing or disabling saved configuration stops any active content script; reload an open sign-in page to use the updated settings.
+
+Sign-in checks run when the form changes, including in loaded background tabs. A polling timer covers time-based checks such as waiting for a fresh verification code.
 
 Run `npm run package` to create an extension-only folder and ZIP in `dist/`. The ZIP contains only runtime files, this README, and attribution. The [Verify extension workflow](https://github.com/ElliotDrel/purdue-sso-extension/actions) also creates a downloadable ZIP artifact on each successful run. Extract it and load the folder containing `manifest.json`.
 

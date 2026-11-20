@@ -58,6 +58,8 @@ assert.equal(purdueContext(), false, 'Wrong account must win over tenant and rem
 identities = ['test@purdue.edu'];
 assert.equal(purdueContext(), true);
 assert.equal(claim('password'), true);
+session.set('purdue-autologin:malformed', 'not a timestamp');
+assert.equal(claim('malformed'), true, 'A malformed timestamp does not block a new submission');
 assert.equal(claim('password'), false, 'Never submit the same step twice in one document');
 session.set('purdue-autologin:otp', String(Date.now()));
 assert.equal(claim('otp'), false, 'Recent submissions must survive reload');
@@ -148,7 +150,7 @@ console.log('Passed: stay-signed-in preference, Yes ordering, existing checkbox 
 
 // Model SPA transitions: an error can arrive before its recovery controls, and
 // remain visible on the method picker after the original challenge has failed.
-function recoveryPage() {
+function recoveryPage({ advanceOnFirstSign = 0 } = {}) {
   const actions = [];
   const state = { errors: [], controls: [], password: null, otp: null, account: config.email };
   const storage = new Map();
@@ -160,9 +162,19 @@ function recoveryPage() {
     getAttribute: () => null, closest: () => null, getClientRects: () => [{}],
   });
   const button = text => element(text, () => actions.push(text));
+  let now = 1_234_567_890_000;
   const page = vm.createContext({
-    URL, crypto: webcrypto, console, HTMLInputElement: Input, Event: context.Event,
-    Date: class extends Date { static now() { return 1_234_567_890_000; } },
+    URL, console, HTMLInputElement: Input, Event: context.Event,
+    crypto: { subtle: {
+      importKey: (...args) => webcrypto.subtle.importKey(...args),
+      async sign(...args) {
+        const signature = await webcrypto.subtle.sign(...args);
+        now += advanceOnFirstSign;
+        advanceOnFirstSign = 0;
+        return signature;
+      },
+    } },
+    Date: class extends Date { static now() { return now; } },
     location: { protocol: 'https:', hostname: 'login.microsoftonline.com', pathname: '/common/login' },
     GM_getValue: (_, fallback) => fallback, GM_registerMenuCommand() {},
     sessionStorage: { getItem: key => storage.get(key), setItem: (key, value) => storage.set(key, value) },
@@ -183,6 +195,18 @@ function recoveryPage() {
   const reload = () => vm.runInContext(source, page);
   reload();
   return { state, actions, element, button, input, reload, tick: () => page.testApi.tick() };
+}
+
+{
+  const p = recoveryPage({ advanceOnFirstSign: 30_000 });
+  p.state.otp = p.input();
+  p.state.controls = [p.button('Verify')];
+  await p.tick();
+  assert.equal(p.state.otp.value, '', 'Never fill a code that expired during generation');
+  assert.deepEqual(p.actions, []);
+  await p.tick();
+  assert.match(p.state.otp.value, /^\d{6}$/);
+  assert.deepEqual(p.actions, ['Verify'], 'The next check can submit a fresh code');
 }
 
 for (const message of [
