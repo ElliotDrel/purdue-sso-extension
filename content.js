@@ -38,6 +38,7 @@
   let started = Date.now();
   let timer;
   let resumeTimer;
+  let formObserver;
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local') return;
     // Never keep using captured credentials after setup is changed or disabled.
@@ -113,14 +114,16 @@
     element.dispatchEvent(new Event('change', { bubbles: true }));
     return true;
   }
-  function claim(step) {
-    const key = prefix + step;
+  function canSubmit(step) {
     if (done.has(step)) return false;
     // Survives full-page reloads, preventing repeated failed password submissions.
-    const last = Number(sessionStorage.getItem(key) || 0);
-    if (Date.now() - last < 60_000) return false;
+    const last = Number(sessionStorage.getItem(prefix + step) || 0);
+    return Date.now() - last >= 60_000;
+  }
+  function claim(step) {
+    if (!canSubmit(step)) return false;
     done.add(step);
-    sessionStorage.setItem(key, String(Date.now()));
+    sessionStorage.setItem(prefix + step, String(Date.now()));
     return true;
   }
   function click(step, element) {
@@ -262,6 +265,7 @@
       // This is a separate post-authentication screen. Handle it before stale
       // login inputs or generic live-region alerts can mask the prompt.
       if (microsoft && /stay signed in\?/i.test(text)) {
+        if (!canSubmit('stay-signed-in')) return;
         const yes = control(/^yes$/i);
         const checkbox = Array.from(document.querySelectorAll('input[type="checkbox"]')).find(element => {
           const labels = Array.from(element.labels || []);
@@ -294,6 +298,7 @@
       // clearing the message or changing methods must not require a reload.
       if (error) return;
       if (password) {
+        if (!canSubmit('password')) return;
         const submit = control(/^(sign in|log in|login)$/i);
         if (!submit) return;
         if (username && !fill(username, microsoft ? config.email : config.username)) return;
@@ -302,16 +307,20 @@
       }
       if (otp && /enter (?:a |the )?code|verification code/i.test(text)) {
         const submit = control(/^(verify|sign in|continue)$/i);
-        if (!submit || done.has('otp')) return;
-        const period = Number(new URL(config.totp_uri).searchParams.get('period') || 30);
+        if (!submit || !canSubmit('otp')) return;
+        const period = Number(new URL(config.totp_uri).searchParams.get('period') || 30) * 1000;
+        const codeExpiresAt = now + period - now % period;
         // Wait for a fresh code when the current one is about to expire.
-        if (period - (Date.now() / 1000 % period) < 5) return;
-        const code = await generateTotp(config.totp_uri);
-        if (!stopped && !manualPaused() && visible(otp) && visible(submit)
+        if (codeExpiresAt - now < 5000) return;
+        const code = await generateTotp(config.totp_uri, now);
+        const finishedAt = Date.now();
+        if (!stopped && !manualPaused(finishedAt) && finishedAt - started <= 180_000
+          && codeExpiresAt - finishedAt >= 5000 && visible(otp) && visible(submit)
           && purdueContext() && fill(otp, code)) click('otp', submit);
         return;
       }
       if (username) {
+        if (!canSubmit('username')) return;
         const next = control(/^(next|continue|sign in)$/i);
         if (next && fill(username, microsoft ? config.email : config.username)) click('username', next);
         return;
@@ -323,8 +332,20 @@
       busy = false;
     }
   }
-  function scheduleTicks() {
+  function stopWatchingForm() {
     clearInterval(timer);
+    formObserver?.disconnect();
+  }
+  async function checkForm() {
+    if (stopped || Date.now() - started > 180_000) {
+      stopWatchingForm();
+      return;
+    }
+    await tick();
+    if (stopped) stopWatchingForm();
+  }
+  function scheduleTicks() {
+    stopWatchingForm();
     clearTimeout(resumeTimer);
     if (stopped || pausedUntil === -1) return;
     if (pausedUntil > Date.now()) {
@@ -333,11 +354,13 @@
     }
     if (pausedUntil !== -1 && pausedUntil <= Date.now()) pausedUntil = 0;
     started = Date.now();
-    void tick();
-    timer = setInterval(() => {
-      if (stopped || Date.now() - started > 180_000) clearInterval(timer);
-      else void tick();
-    }, 600);
+    formObserver ??= new MutationObserver(checkForm);
+    formObserver.observe(document.documentElement, {
+      subtree: true, childList: true, attributes: true, characterData: true,
+    });
+    // Keep polling as a fallback, including when a verification code needs time to renew.
+    timer = setInterval(checkForm, 600);
+    void checkForm();
   }
   scheduleTicks();
 

@@ -20,6 +20,7 @@ async function contentPage({ hostname, pathname, body, campus, manualPause = 0,
   const changes = [];
   const page = vm.createContext({
     URL, console, Date, setTimeout: () => 1, clearTimeout() {}, setInterval: () => 1, clearInterval() {},
+    MutationObserver: class { observe() {} disconnect() {} },
     location: { protocol: 'https:', hostname, pathname, href: `https://${hostname}${pathname}`,
       assign(url) { navigation.push(url); }, reload() {} },
     sessionStorage: { getItem: key => recentPurdueContext && key === 'purdue-autologin:context'

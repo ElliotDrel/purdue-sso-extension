@@ -60,6 +60,8 @@ Requires Node.js 20 or newer, with no package dependencies to install. Edit `con
 
 The guided setup and popup share validation and authenticator helpers in `setup-core.js`; all screens share `ui.css`. Automated onboarding tests cover full-email validation, enrollment confirmation, code rollover and copying, incomplete setup, and storage failures. Changing or disabling saved configuration stops any active content script; reload an open sign-in page to use the updated settings.
 
+Sign-in checks run when the form changes, including in loaded background tabs. A polling timer covers time-based checks such as waiting for a fresh verification code.
+
 Run `npm run package` to create an extension-only folder and ZIP in `dist/`. The ZIP contains only runtime files, this README, and attribution. The [Verify extension workflow](https://github.com/ElliotDrel/purdue-sso-extension/actions) also creates a downloadable ZIP artifact on each successful run. Extract it and load the folder containing `manifest.json`.
 
 See `NOTICE.md` for attribution. The original userscript is a reference, not a build dependency.

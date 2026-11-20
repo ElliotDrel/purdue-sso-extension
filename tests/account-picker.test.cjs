@@ -34,6 +34,7 @@ async function picker({ accounts = [], branded = false, paused = false, enabled 
     sessionStorage: { getItem: key => storage.get(key), setItem: (key, value) => storage.set(key, value) },
     URL, Date, Set, Number, Array, Object, console,
     setInterval: () => 1, clearInterval() {}, setTimeout: () => 1, clearTimeout() {},
+    MutationObserver: class { observe() {} disconnect() {} },
   };
   await vm.runInNewContext(script, context);
   return clicks;
