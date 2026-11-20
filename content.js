@@ -39,6 +39,7 @@
   let timer;
   let resumeTimer;
   let formObserver;
+  let formCheckPending = false;
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local') return;
     // Never keep using captured credentials after setup is changed or disabled.
@@ -118,7 +119,7 @@
     if (done.has(step)) return false;
     // Survives full-page reloads, preventing repeated failed password submissions.
     const last = Number(sessionStorage.getItem(prefix + step) || 0);
-    return Date.now() - last >= 60_000;
+    return !Number.isFinite(last) || Date.now() - last >= 60_000;
   }
   function claim(step) {
     if (!canSubmit(step)) return false;
@@ -214,11 +215,12 @@
     return String(value % 10 ** digits).padStart(digits, '0');
   }
 
+  function attemptEnded(now = Date.now()) {
+    return stopped || now - started > 180_000;
+  }
   async function tick() {
     const now = Date.now();
-    if (busy || stopped || manualPaused(now)) return;
-    if (now - started > 180_000) return;
-    busy = true;
+    if (attemptEnded(now) || manualPaused(now)) return;
     try {
       const text = document.body?.innerText || '';
       if (outlookAuth && (outlookAuth.manual || outlookAuth.account !== email)) {
@@ -314,7 +316,7 @@
         if (codeExpiresAt - now < 5000) return;
         const code = await generateTotp(config.totp_uri, now);
         const finishedAt = Date.now();
-        if (!stopped && !manualPaused(finishedAt) && finishedAt - started <= 180_000
+        if (!attemptEnded(finishedAt) && !manualPaused(finishedAt)
           && codeExpiresAt - finishedAt >= 5000 && visible(otp) && visible(submit)
           && purdueContext() && fill(otp, code)) click('otp', submit);
         return;
@@ -328,21 +330,30 @@
     } catch {
       stopped = true;
       console.info('Purdue automatic sign-in paused. Check the form and configuration, then use the retry menu.');
-    } finally {
-      busy = false;
     }
   }
   function stopWatchingForm() {
     clearInterval(timer);
     formObserver?.disconnect();
+    formCheckPending = false;
   }
   async function checkForm() {
-    if (stopped || Date.now() - started > 180_000) {
+    if (attemptEnded()) {
       stopWatchingForm();
       return;
     }
-    await tick();
-    if (stopped) stopWatchingForm();
+    if (busy) {
+      // Keep one follow-up for form changes that arrive during code generation.
+      formCheckPending = true;
+      return;
+    }
+    busy = true;
+    do {
+      formCheckPending = false;
+      await tick();
+    } while (formCheckPending && !attemptEnded() && !manualPaused());
+    busy = false;
+    if (attemptEnded()) stopWatchingForm();
   }
   function scheduleTicks() {
     stopWatchingForm();
@@ -356,7 +367,12 @@
     started = Date.now();
     formObserver ??= new MutationObserver(checkForm);
     formObserver.observe(document.documentElement, {
-      subtree: true, childList: true, attributes: true, characterData: true,
+      subtree: true, childList: true, characterData: true,
+      attributeFilter: [
+        'aria-disabled', 'aria-hidden', 'aria-label', 'alt', 'autocomplete',
+        'class', 'data-test-id', 'disabled', 'hidden', 'html', 'href', 'id',
+        'name', 'role', 'style', 'type', 'value',
+      ],
     });
     // Keep polling as a fallback, including when a verification code needs time to renew.
     timer = setInterval(checkForm, 600);

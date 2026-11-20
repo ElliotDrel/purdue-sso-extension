@@ -58,6 +58,8 @@ assert.equal(purdueContext(), false, 'Wrong account must win over tenant and rem
 identities = ['test@purdue.edu'];
 assert.equal(purdueContext(), true);
 assert.equal(claim('password'), true);
+session.set('purdue-autologin:malformed', 'not a timestamp');
+assert.equal(claim('malformed'), true, 'A malformed timestamp does not block a new submission');
 assert.equal(claim('password'), false, 'Never submit the same step twice in one document');
 session.set('purdue-autologin:otp', String(Date.now()));
 assert.equal(claim('otp'), false, 'Recent submissions must survive reload');
